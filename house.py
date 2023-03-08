@@ -9,18 +9,69 @@ from gdpc.vector_tools import X, Y, Z, XZ, addY, dropY, loop2D, loop3D, perpendi
 
 from glm import ivec2
 
+def generatePorch(outlineRect, heightmap):
 
-def generateFundation(y, inlineRect, outlineRect):
-    geometry.placeRect(
-        editor, outlineRect, y - 1, Block("stone_bricks"))
-    geometry.placeRect(
-        editor, inlineRect, y, Block("air"))
-    geometry.placeRectOutline(
-        editor, outlineRect, y, Block("stone_bricks"))
+
+    west = ivec2(outlineRect.end.x - 1, outlineRect.begin.y)
+    y = heightmap[tuple(west - outlineRect.offset)]
+
+    # y = y+1
+
+    editor.placeBlock(addY(west + (0, -1), y), Block("stone_bricks"))
+    editor.placeBlock(addY(west + (-2, -1), y), Block("stone_bricks"))
+    editor.placeBlock(addY(west + (-3, -1), y),
+                      Block("stone_brick_stairs", {"facing": "east"}))
+
+    editor.placeBlock(addY(west + (0, -2), y), Block("stone_bricks"))
+    editor.placeBlock(addY(west + (-2, -2), y), Block("stone_bricks"))
+    editor.placeBlock(addY(west + (-3, -2), y), Block("stone_bricks"))
+    editor.placeBlock(addY(west + (-4, -2), y), Block("stone_brick_wall"))
+
     y = y+1
-    geometry.placeRectOutline(
-        editor, outlineRect, y, Block("stone_bricks"))
+
+    editor.placeBlock(addY(west + (0, -1), y), Block("stone_bricks"))
+    editor.placeBlock(addY(west + (-1, -1), y), Block("stone_bricks"))
+    editor.placeBlock(addY(west + (-2, -1), y),
+                      Block("stone_brick_stairs", {"facing": "east"}))
+
+    editor.placeBlock(addY(west + (0, -2), y), Block("stone_bricks"))
+    editor.placeBlock(addY(west + (-1, -2), y), Block("stone_bricks"))
+    editor.placeBlock(addY(west + (-2, -2), y), Block("stone_bricks"))
+    editor.placeBlock(addY(west + (-3, -2), y), Block("stone_brick_wall"))
+
     y = y+1
+
+    editor.placeBlock(addY(west + (0, -1), y), Block("stone_brick_wall"))
+    editor.placeBlock(addY(west + (0, -2), y), Block("stone_brick_wall"))
+    editor.placeBlock(addY(west + (-1, -2), y), Block("stone_brick_wall"))
+    editor.placeBlock(addY(west + (-2, -2), y), Block("stone_brick_wall"))
+
+
+def generateFundation(y, inlineRect, outlineRect, heightmap):
+    maxHeight = heightmap.max()
+
+
+    # geometry.placeRect(
+    #     editor, outlineRect, y - 1, Block("stone_bricks"))
+    # geometry.placeRect(
+    #     editor, inlineRect, y, Block("air"))
+    # geometry.placeRectOutline(
+    #     editor, outlineRect, y, Block("stone_bricks"))
+    # y = y+1
+    # geometry.placeRectOutline(
+    #     editor, outlineRect, y, Block("stone_bricks"))
+    # y = y+1
+
+    for point in outlineRect.outline:
+        height = heightmap[tuple(point - outlineRect.offset)]
+
+        y = height
+        while (y < maxHeight):
+            editor.placeBlock(addY(point, y), Block("stone_bricks"))
+            y = y+1
+
+    generatePorch(outlineRect, heightmap)
+
     # geometry.placeRectOutline(
     #     editor, outlineRect, y, Block("stone_bricks"))
     # y = y+1
@@ -451,38 +502,37 @@ def generateRoof(y, outlineA, outlineB):
     return y
 
 
-def generatePorch(y, outlineRect):
-    west = ivec2(outlineRect.end.x - 1, outlineRect.begin.y)
-    y = y+1
 
-    editor.placeBlock(addY(west + (0, -1), y), Block("stone_bricks"))
-    editor.placeBlock(addY(west + (-2, -1), y), Block("stone_bricks"))
-    editor.placeBlock(addY(west + (-3, -1), y),
-                      Block("stone_brick_stairs", {"facing": "east"}))
 
-    editor.placeBlock(addY(west + (0, -2), y), Block("stone_bricks"))
-    editor.placeBlock(addY(west + (-2, -2), y), Block("stone_bricks"))
-    editor.placeBlock(addY(west + (-3, -2), y), Block("stone_bricks"))
-    editor.placeBlock(addY(west + (-4, -2), y), Block("stone_brick_wall"))
 
-    y = y+1
+def findChunk(buildSlice):
+    chunk = buildSlice.chunkRect.begin + ivec2(1, 1) # only whole chunks
 
-    editor.placeBlock(addY(west + (0, -1), y), Block("stone_bricks"))
-    editor.placeBlock(addY(west + (-1, -1), y), Block("stone_bricks"))
-    editor.placeBlock(addY(west + (-2, -1), y),
-                      Block("stone_brick_stairs", {"facing": "east"}))
+    while (chunk.x < buildSlice.chunkRect.last.x):
+        while (chunk.y < buildSlice.chunkRect.last.y):
+            chunkRect = Rect(chunk * ivec2(16, 16), ivec2(16, 16))
+            print(chunkRect)
+            
+            chunkSlice = editor.loadWorldSlice(chunkRect)
+            surface = chunkSlice.heightmaps["MOTION_BLOCKING_NO_LEAVES"]
+            liquid = surface - chunkSlice.heightmaps["OCEAN_FLOOR"]
 
-    editor.placeBlock(addY(west + (0, -2), y), Block("stone_bricks"))
-    editor.placeBlock(addY(west + (-1, -2), y), Block("stone_bricks"))
-    editor.placeBlock(addY(west + (-2, -2), y), Block("stone_bricks"))
-    editor.placeBlock(addY(west + (-3, -2), y), Block("stone_brick_wall"))
+            print(surface)
 
-    y = y+1
+            print(surface.max() - surface.min())
 
-    editor.placeBlock(addY(west + (0, -1), y), Block("stone_brick_wall"))
-    editor.placeBlock(addY(west + (0, -2), y), Block("stone_brick_wall"))
-    editor.placeBlock(addY(west + (-1, -2), y), Block("stone_brick_wall"))
-    editor.placeBlock(addY(west + (-2, -2), y), Block("stone_brick_wall"))
+            if (liquid.sum() > 10):
+                break
+
+            if surface.max() - surface.min() <= 3 :
+                return chunk * ivec2(16, 16)
+
+            chunk = chunk + ivec2(0, 1)
+        chunk = ivec2(chunk.x + 1, buildSlice.chunkRect.begin.y + 1)
+
+    print("Not found")
+    return False
+
 
 
 def main():
@@ -520,10 +570,22 @@ def main():
     print(f"Build area last:   {tuple(buildArea.last)}")
     print(f"Build area center: {tuple(buildArea.center)}")
 
-    # offset = (20, 60)
-    size = ivec2(7, 14)
+    buildRect = buildArea.toRect()
+    buildSlice = editor.loadWorldSlice(buildRect)
+    offset = findChunk(buildSlice)
+    
+    if (not offset):
+        print("could not find suitable area")
+        return
 
-    outlineA = dropY(buildArea.begin)# + offset
+    print(tuple(offset))
+
+    # offset = (20, 60)
+    size = ivec2(8, 14)
+
+    
+
+    outlineA = offset
     outlineB = outlineA + size - (1, 1)
     inlineA = outlineA + (1, 1)
     # inlineB = outlineB - (1, 1)
@@ -531,6 +593,8 @@ def main():
     # buildRect = buildArea.toRect()
     outlineRect = Rect(outlineA, size)
     inlineRect = Rect(inlineA, size + ivec2(-2, -2))
+    worldSlice = editor.loadWorldSlice(outlineRect)
+    heightmap = worldSlice.heightmaps["MOTION_BLOCKING_NO_LEAVES"]
 
     # print(f"outline a: {tuple(outlineA)} b: {tuple(outlineB)} rect: {outlineRect} build: {buildRect}")
 
@@ -540,9 +604,8 @@ def main():
     # generateWall(y, outlineRect)
     # generateWindows(y, outlineRect, 2)
 
-    generatePorch(y, outlineRect)
-
-    y = generateFundation(y, inlineRect, outlineRect)
+    print (f"generate fundation {outlineRect}")
+    y = generateFundation(y, inlineRect, outlineRect, heightmap)
 
     y = generateFloor(y, outlineRect, inlineRect, 0)
     y = generateStory(y, inlineRect, outlineRect, 3, 1, True)

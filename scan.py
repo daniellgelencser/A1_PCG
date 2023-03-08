@@ -2,7 +2,8 @@ import sys
 
 from gdpc import __url__, Editor, Block, geometry
 from gdpc.exceptions import InterfaceConnectionError, BuildAreaNotSetError
-from gdpc.vector_tools import addY, dropY, ivec2, Rect
+from gdpc.vector_tools import addY, dropY, ivec2, ivec3, Rect
+import numpy as np
 
 
 editor = Editor()
@@ -30,36 +31,68 @@ except BuildAreaNotSetError:
     )
     sys.exit(1)
 
-size = ivec2(7, 14)
+print(f"Build area offset: {tuple(buildArea.offset)}")
+print(f"Build area size:   {tuple(buildArea.size)}")
+
+# The Box class has many convenience methods and properties. Here are a few.
+print(f"Build area start:  {tuple(buildArea.begin)}")
+print(f"Build area end:    {tuple(buildArea.end)}")
+# Last is inclusive, end is exclusive.
+print(f"Build area last:   {tuple(buildArea.last)}")
+print(f"Build area center: {tuple(buildArea.center)}")
 
 buildRect = buildArea.toRect()
-outlineA = dropY(buildArea.center)
+buildSlice = editor.loadWorldSlice(buildRect)
 
-outlineRect = Rect(outlineA, size)
-worldSlice = editor.loadWorldSlice(outlineRect)
+print(f"chunk rect {buildSlice.chunkRect}")
+print(f"chunk rect end {buildSlice.chunkRect.end}")
+print(f"chunk rect last {buildSlice.chunkRect.last}")
 
-# offset = (20, 60)
+# By default, world slices load the following four heightmaps:
+# - "WORLD_SURFACE":             The top non-air blocks.
+# - "MOTION_BLOCKING":           The top blocks with a hitbox or fluid.
+# - "MOTION_BLOCKING_NO_LEAVES": Like MOTION_BLOCKING, but ignoring leaves.
+# - "OCEAN_FLOOR":               The top non-air solid blocks.
+
+# liquid = buildSlice.heightmaps["MOTION_BLOCKING_NO_LEAVES"] - buildSlice.heightmaps["OCEAN_FLOOR"]
+# print(liquid)
+
+# centre = buildSlice.chunkRect.center * ivec2(16, 16)
+
+# print(centre)
+
+def findChunk(buildSlice):
+    chunk = buildSlice.chunkRect.begin + ivec2(1, 1) # only whole chunks
+
+    while (chunk.x < buildSlice.chunkRect.last.x):
+        while (chunk.y < buildSlice.chunkRect.last.y):
+            chunkRect = Rect(chunk * ivec2(16, 16), ivec2(16, 16))
+            chunkSlice = editor.loadWorldSlice(chunkRect)
+            surface = chunkSlice.heightmaps["MOTION_BLOCKING_NO_LEAVES"]
+
+            if surface.max() - 3 <= surface.min():
+                return chunk * ivec2(16, 16)
+
+            chunk = chunk + ivec2(0, 1)
+        chunk = chunk + ivec2(1, 0)
+
+findChunk(buildSlice)
+
+# size = ivec2(7, 14)
+chunk = buildSlice.chunkRect.begin + ivec2(1, 1) # only whole chunks
 
 
-outlineA = dropY(buildArea.begin)# + offset
-outlineB = outlineA + (7, 14) - (1, 1)
-inlineA = outlineA + (1, 1)
-inlineB = outlineB - (1, 1)
 
-vec = addY(outlineA, buildArea.center.y + 17)
-print(f"Block at {tuple(vec)}: {worldSlice.getBlockGlobal(vec)}")
+print(f"chunk {tuple(chunk)}")
+chunkRect = Rect(chunk * ivec2(16, 16), ivec2(16, 16))
+chunkSlice = editor.loadWorldSlice(chunkRect)
 
-heightmap = worldSlice.heightmaps["MOTION_BLOCKING_NO_LEAVES"]
+surface = chunkSlice.heightmaps["MOTION_BLOCKING_NO_LEAVES"]
+# liquid = surface - chunkSlice.heightmaps["OCEAN_FLOOR"]
+# print(liquid)
+# # print(surface.max() - surface.min())
 
-# localCenter = buildRect.size // 2
+# non_zero = liquid.nonzero()
+# non_zero_vec = list(map(lambda x, y: ivec2(x,y), non_zero[0], non_zero[1]))
 
-# centerHeight = heightmap[tuple(localCenter)]
-# centerTopBlock = worldSlice.getBlock(addY(localCenter, centerHeight - 1))
-
-for point in outlineRect.outline:
-    height = heightmap[tuple(point - outlineRect.offset)]
-    # y = height
-    # while (y < centerHeight):
-    #     editor.placeBlock(addY(point, y), Block("orange_concrete"))
-    #     y = y+1
-
+# print(tuple(non_zero[0]))
