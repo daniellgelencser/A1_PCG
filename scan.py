@@ -44,9 +44,9 @@ print(f"Build area center: {tuple(buildArea.center)}")
 buildRect = buildArea.toRect()
 buildSlice = editor.loadWorldSlice(buildRect)
 
-print(f"chunk rect {buildSlice.chunkRect}")
-print(f"chunk rect end {buildSlice.chunkRect.end}")
-print(f"chunk rect last {buildSlice.chunkRect.last}")
+# print(f"chunk rect {buildSlice.chunkRect}")
+# print(f"chunk rect end {buildSlice.chunkRect.end}")
+# print(f"chunk rect last {buildSlice.chunkRect.last}")
 
 # By default, world slices load the following four heightmaps:
 # - "WORLD_SURFACE":             The top non-air blocks.
@@ -76,18 +76,58 @@ def findChunk(buildSlice):
             chunk = chunk + ivec2(0, 1)
         chunk = chunk + ivec2(1, 0)
 
-findChunk(buildSlice)
 
-# size = ivec2(7, 14)
-chunk = buildSlice.chunkRect.begin + ivec2(1, 1) # only whole chunks
+def findRect(buildRect, size, pointRect):
+    point = buildRect.begin
+
+    while(point.x < buildRect.last.x):
+        while (point.y < buildRect.last.y):
+
+            pointRect = Rect(point, size)
+            print(pointRect)
+
+            pointSlice = editor.loadWorldSlice(pointRect)
+            surface = pointSlice.heightmaps["MOTION_BLOCKING_NO_LEAVES"]
+            liquid = surface - pointSlice.heightmaps["OCEAN_FLOOR"]
+
+            print(surface)
+
+            surfaceDiff = surface.max() - surface.min()
+
+            if (surfaceDiff <= 3 and liquid.sum() == 0):
+                return surface
+            
+            point = point + ivec2(0, size.y)
+        point = ivec2(point.x + size.x, buildRect.begin.y)
+
+    print("Not found")
+    return False
+
+
+    
+
+
+size = ivec2(7, 14)
+pointRect = Rect(dropY(buildArea.begin), size)
+surface = findRect(buildRect, size, pointRect)
+
+if (pointRect):
+    print(pointRect)
+    editor.placeBlock(addY(pointRect.begin, surface[0][0]), Block("blue_concrete"))
 
 
 
-print(f"chunk {tuple(chunk)}")
-chunkRect = Rect(chunk * ivec2(16, 16), ivec2(16, 16))
-chunkSlice = editor.loadWorldSlice(chunkRect)
+# findChunk(buildSlice)
 
-surface = chunkSlice.heightmaps["MOTION_BLOCKING_NO_LEAVES"]
+# chunk = buildSlice.chunkRect.begin + ivec2(1, 1) # only whole chunks
+
+
+
+# print(f"chunk {tuple(chunk)}")
+# chunkRect = Rect(chunk * ivec2(16, 16), ivec2(16, 16))
+# chunkSlice = editor.loadWorldSlice(chunkRect)
+
+# surface = chunkSlice.heightmaps["MOTION_BLOCKING_NO_LEAVES"]
 # liquid = surface - chunkSlice.heightmaps["OCEAN_FLOOR"]
 # print(liquid)
 # # print(surface.max() - surface.min())

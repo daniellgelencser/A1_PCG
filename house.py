@@ -504,7 +504,6 @@ def generateRoof(y, outlineA, outlineB):
 
 
 
-
 def findChunk(buildSlice):
     chunk = buildSlice.chunkRect.begin + ivec2(1, 1) # only whole chunks
 
@@ -529,6 +528,34 @@ def findChunk(buildSlice):
 
             chunk = chunk + ivec2(0, 1)
         chunk = ivec2(chunk.x + 1, buildSlice.chunkRect.begin.y + 1)
+
+    print("Not found")
+    return False
+
+
+def findRect(buildRect, size):
+    size = size + ivec2(2, 2)
+    point = buildRect.begin
+
+    while(point.x < buildRect.last.x):
+        while (point.y < buildRect.last.y):
+
+            pointRect = Rect(point + ivec2(-1, -1), size)
+            print(pointRect)
+
+            pointSlice = editor.loadWorldSlice(pointRect)
+            surface = pointSlice.heightmaps["MOTION_BLOCKING_NO_LEAVES"]
+            liquid = surface - pointSlice.heightmaps["OCEAN_FLOOR"]
+
+            print(surface)
+
+            surfaceDiff = surface.max() - surface.min()
+
+            if (surfaceDiff <= 3 and liquid.sum() == 0):
+                return point
+            
+            point = point + ivec2(0, size.y)
+        point = ivec2(point.x + size.x, buildRect.begin.y)
 
     print("Not found")
     return False
@@ -572,7 +599,10 @@ def main():
 
     buildRect = buildArea.toRect()
     buildSlice = editor.loadWorldSlice(buildRect)
-    offset = findChunk(buildSlice)
+
+    size = ivec2(7, 14)
+
+    offset = findRect(buildRect, size)
     
     if (not offset):
         print("could not find suitable area")
@@ -581,7 +611,6 @@ def main():
     print(tuple(offset))
 
     # offset = (20, 60)
-    size = ivec2(8, 14)
 
     
 
