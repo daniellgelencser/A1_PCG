@@ -61,4 +61,4 @@ buildRect = buildArea.toRect()
 # geometry.placeRect(editor, buildRect, buildArea.begin.y-1, Block("light_gray_concrete"))
 # geometry.placeRect(editor, buildRect, buildArea.begin.y, Block("light_gray_concrete"))
 
-geometry.placeRectOutline(editor, buildRect, buildArea.begin.y+1, Block("red_concrete"))
+geometry.placeRectOutline(editor, buildRect, buildArea.begin.y-1, Block("red_concrete"))
